@@ -1,0 +1,63 @@
+name: Rust Build & Release
+
+on:
+    push:
+        branches: [main]
+
+jobs:
+    build:
+        name: Build
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                target:
+                    - x86_64-unknown-linux-gnu
+                    - x86_64-pc-windows-gnu
+                    - x86_64-apple-darwin
+                    - aarch64-apple-darwin
+                    - x86_64-unknown-linux-musl
+                    - x86_64-centos-linux-gnu
+
+        steps:
+            - uses: actions/checkout@v2
+            - name: Build
+              uses: rust-build/rust-build.action@v1.4.5
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  RUSTTARGET: ${{ matrix.target }}
+                  TOOLCHAIN_VERSION: stable
+                  UPLOAD_MODE: none
+
+    release:
+        name: Release
+        needs: build
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - name: Create Release
+              id: create_release
+              uses: actions/create-release@v1
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  tag_name: v${{ github.run_number }}
+                  release_name: Release v${{ github.run_number }}
+                  draft: false
+                  prerelease: false
+
+            - name: Download Artifacts
+              uses: actions/download-artifact@v2
+              with:
+                  path: artifacts
+
+            - name: Upload Release Assets
+              run: |
+                  for asset in artifacts/*/*; do
+                    asset_name=$(basename "$asset")
+                    echo "Uploading $asset_name..."
+                    gh release upload v${{ github.run_number }} "$asset"
+                  done
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
