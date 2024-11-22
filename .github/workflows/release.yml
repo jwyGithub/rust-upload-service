@@ -60,6 +60,18 @@ jobs:
                   TOOLCHAIN_VERSION: stable
                   UPLOAD_MODE: none
 
+            # 列出当前目录内容
+            - name: List current directory
+              run: |
+                  echo "Current directory contents:"
+                  ls -la
+
+            # 列出整个构建目录结构
+            - name: List build directory structure
+              run: |
+                  echo "Build directory structure:"
+                  find . -type f -name "*" -not -path "*/\.*"
+
             # 添加代码检查
             - name: Run clippy
               run: |
@@ -71,6 +83,13 @@ jobs:
               run: |
                   rustup component add rustfmt
                   cargo fmt -- --check
+
+            # 上传构建产物
+            - name: Upload artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: binary
+                  path: ${{ github.event.repository.name }} # 这里的路径可能需要根据实际输出调整
 
     release:
         name: Release
@@ -107,6 +126,12 @@ jobs:
                   name: binary
                   path: artifacts
 
+            # 列出下载的构建产物
+            - name: List downloaded artifacts
+              run: |
+                  echo "Downloaded artifacts:"
+                  ls -la artifacts/
+
             # 上传 Linux 构建
             - name: Upload Linux Release Asset
               uses: actions/upload-release-asset@v1
@@ -114,53 +139,6 @@ jobs:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
                   upload_url: ${{ steps.create_release.outputs.upload_url }}
-                  asset_path: ./artifacts/binary-linux
+                  asset_path: ./artifacts/${{ github.event.repository.name }}
                   asset_name: ${{ github.event.repository.name }}-linux-x86_64
                   asset_content_type: application/octet-stream
-
-            # 上传 Windows 构建
-            - name: Upload Windows Release Asset
-              uses: actions/upload-release-asset@v1
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              with:
-                  upload_url: ${{ steps.create_release.outputs.upload_url }}
-                  asset_path: ./artifacts/binary-windows.exe
-                  asset_name: ${{ github.event.repository.name }}-windows-x86_64.exe
-                  asset_content_type: application/octet-stream
-
-            # 上传 macOS 构建
-            - name: Upload MacOS Release Asset
-              uses: actions/upload-release-asset@v1
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              with:
-                  upload_url: ${{ steps.create_release.outputs.upload_url }}
-                  asset_path: ./artifacts/binary-macos
-                  asset_name: ${{ github.event.repository.name }}-macos-x86_64
-                  asset_content_type: application/octet-stream
-
-    # 添加文档生成和部署
-    docs:
-        name: Generate and deploy docs
-        needs: release
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
-
-            - name: Install Rust
-              uses: actions-rs/toolchain@v1
-              with:
-                  profile: minimal
-                  toolchain: stable
-                  override: true
-
-            - name: Generate documentation
-              run: cargo doc --no-deps
-
-            - name: Deploy documentation
-              uses: peaceiris/actions-gh-pages@v3
-              with:
-                  github_token: ${{ secrets.GITHUB_TOKEN }}
-                  publish_dir: ./target/doc
-
