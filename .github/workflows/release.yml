@@ -89,7 +89,7 @@ jobs:
               uses: actions/upload-artifact@v4
               with:
                   name: binary
-                  path: ${{ github.event.repository.name }} # 这里的路径可能需要根据实际输出调整
+                  path: output/rust-upload-service # 更新后的路径
 
     release:
         name: Release
@@ -139,6 +139,6 @@ jobs:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
                   upload_url: ${{ steps.create_release.outputs.upload_url }}
-                  asset_path: ./artifacts/${{ github.event.repository.name }}
-                  asset_name: ${{ github.event.repository.name }}-linux-x86_64
+                  asset_path: ./artifacts/rust-upload-service
+                  asset_name: rust-upload-service-linux-x86_64
                   asset_content_type: application/octet-stream
