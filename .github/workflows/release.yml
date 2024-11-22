@@ -38,8 +38,6 @@ jobs:
             matrix:
                 target:
                     - x86_64-unknown-linux-musl
-                    - x86_64-pc-windows-msvc
-                    - x86_64-apple-darwin
 
         steps:
             - uses: actions/checkout@v4
@@ -165,3 +163,4 @@ jobs:
               with:
                   github_token: ${{ secrets.GITHUB_TOKEN }}
                   publish_dir: ./target/doc
+
