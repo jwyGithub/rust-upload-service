@@ -144,7 +144,7 @@ impl Guard for MultipartGuard {
 fn load_rustls_config(cert_dir: &str) -> Result<ServerConfig, std::io::Error> {
     // 证书文件路径
     let cert_path = Path::new(cert_dir).join("fullchain.cer");
-    let key_path = Path::new(cert_dir).join("private.key");
+    let key_path = Path::new(cert_dir).join("private_pkcs8.key");
 
     // 读取证书文件
     let cert_file = File::open(cert_path)?;
@@ -155,18 +155,18 @@ fn load_rustls_config(cert_dir: &str) -> Result<ServerConfig, std::io::Error> {
 
     // 解析证书
     let cert_chain = certs(&mut cert_reader)
-        .map_err(|_| std::io::Error::new(std::io::ErrorKind::InvalidData, "Invalid certificate"))?
+        .map_err(|_| std::io::Error::new(std::io::ErrorKind::InvalidData, "无效的证书"))?
         .into_iter()
         .map(Certificate)
         .collect::<Vec<_>>();
 
     // 解析私钥
     let keys = pkcs8_private_keys(&mut key_reader)
-        .map_err(|_| std::io::Error::new(std::io::ErrorKind::InvalidData, "Invalid private key"))?;
+        .map_err(|_| std::io::Error::new(std::io::ErrorKind::InvalidData, "无效的私钥"))?;
 
     let private_key = keys
         .first()
-        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "No private keys found"))?
+        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "没有找到私钥"))?
         .clone();
 
     // 配置 TLS
@@ -204,7 +204,7 @@ async fn main() -> std::io::Result<()> {
     // 初始化日志系统
     env_logger::init_from_env(env_logger::Env::default().default_filter_or("info"));
 
-    let cert_dir = std::env::var("CERT_DIR").unwrap_or_else(|_| "../certs".to_string());
+    let cert_dir = std::env::var("CERT_DIR").unwrap_or_else(|_| "./cert".to_string());
     let upload_dir = std::env::var("UPLOAD_DIR").unwrap_or_else(|_| "./uploads".to_string());
 
     let config = Config {
